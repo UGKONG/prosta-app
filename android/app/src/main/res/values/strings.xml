@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">PROSTA</string>
     <string name="kakao_app_key">c01947e0400b3db7e98a4d68c0b6670f</string>
+
+    <string name="facebook_app_id">528283278801879</string>
+    <string name="fb_login_protocol_scheme">fb1234</string>
+    <string name="facebook_client_token">7e913c9045344bf30cf6680c24eef3bf</string>
 </resources>

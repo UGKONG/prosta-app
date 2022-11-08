@@ -8,10 +8,6 @@ import store from '../../store';
 import Container from '../../components/Container';
 import Toast from 'react-native-toast-message';
 import useSnsList from './useSnsList';
-import type {
-  KakaoProfile,
-  KakaoProfileNoneAgreement,
-} from '@react-native-seoul/kakao-login';
 import {
   getProfile as getKakaoProfile,
   login,
@@ -29,6 +25,7 @@ import type {ParamListBase} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Checkbox} from 'react-native-paper';
 import useAxios from '../../../hooks/useAxios';
+import {AccessToken, LoginManager, Profile} from 'react-native-fbsdk-next';
 
 const iosKeys: NaverLoginPlatformKey = {
   kConsumerKey: 'cb9rH6kkXzCWO42bZbXL',
@@ -59,7 +56,7 @@ export default function 로그인({navigation}: Props): JSX.Element {
     if (id === '' || name === '') {
       Toast.show({
         type: 'error',
-        text1: snsPlatform + '계정으로 로그인을 시도하였습니다.',
+        text1: snsPlatform + ' 계정으로 로그인을 시도하였습니다.',
         text2: '로그인에 실패하였습니다.',
       });
       return;
@@ -78,7 +75,7 @@ export default function 로그인({navigation}: Props): JSX.Element {
         if (!data?.result) {
           return Toast.show({
             type: 'error',
-            text1: snsPlatform + '계정으로 로그인을 시도하였습니다.',
+            text1: snsPlatform + ' 계정으로 로그인을 시도하였습니다.',
             text2: '로그인에 실패하였습니다.',
           });
         }
@@ -89,7 +86,7 @@ export default function 로그인({navigation}: Props): JSX.Element {
 
         Toast.show({
           type: 'success',
-          text1: snsPlatform + '계정으로 로그인하였습니다.',
+          text1: snsPlatform + ' 계정으로 로그인하였습니다.',
           text2: name + '님 반갑습니다.',
         });
       })
@@ -101,7 +98,7 @@ export default function 로그인({navigation}: Props): JSX.Element {
 
         Toast.show({
           type: 'error',
-          text1: snsPlatform + '계정으로 로그인을 시도하였습니다.',
+          text1: snsPlatform + ' 계정으로 로그인을 시도하였습니다.',
           text2: '로그인에 실패하였습니다.',
         });
       })
@@ -112,23 +109,19 @@ export default function 로그인({navigation}: Props): JSX.Element {
 
   // 카카오 회원정보 조회
   const getKakaoData = (): void => {
-    getKakaoProfile().then(
-      (
-        value: KakaoProfile | KakaoProfileNoneAgreement,
-      ): void | PromiseLike<void> => {
-        const snsPlatform = 'KAKAO';
-        const id: string = value?.id ?? '';
-        const name: string = (value?.nickname as string) ?? '';
+    getKakaoProfile().then((value: any): void | PromiseLike<void> => {
+      const snsPlatform = 'KAKAO';
+      const id: string = value?.id ?? '';
+      const name: string = (value?.nickname as string) ?? '';
 
-        let data: SnsLoginData = {
-          appPlatform: possibleDeviceName,
-          snsPlatform,
-          id,
-          name,
-        };
-        submit(data);
-      },
-    );
+      let data: SnsLoginData = {
+        appPlatform: possibleDeviceName,
+        snsPlatform,
+        id,
+        name,
+      };
+      submit(data);
+    });
   };
 
   // 네이버 회원정보 조회
@@ -169,11 +162,46 @@ export default function 로그인({navigation}: Props): JSX.Element {
       .catch(() => {});
   };
 
+  // 페이스북 로그인
+  const facebookLogin = (): void => {
+    LoginManager.logInWithPermissions([
+      'public_profile',
+      'email',
+      'user_friends',
+    ]).then(
+      (result: any) => {
+        if (result.isCancelled) return;
+        AccessToken.getCurrentAccessToken().then(data => {
+          if (!data) return;
+          let token = data?.accessToken?.toString();
+          if (!token) return;
+
+          Profile.getCurrentProfile().then(profile => {
+            if (!profile?.userID || !profile?.name) return;
+            submit({
+              appPlatform: possibleDeviceName,
+              snsPlatform: 'FACEBOOK',
+              id: profile?.userID,
+              name: profile?.name,
+            });
+          });
+        });
+      },
+      (error: Error) => {
+        console.log('Login fail with error: ' + error);
+      },
+    );
+  };
+
   // 자동 로그인 체크
   const autoLoginCheck = (): void => setIsAutoLogin(prev => !prev);
 
   // SNS 로그인 리스트
-  const snsList: Array<SnsLoginList> = useSnsList(kakaoLogin, naverLogin);
+  const snsList: Array<SnsLoginList> = useSnsList(
+    kakaoLogin,
+    naverLogin,
+    facebookLogin,
+  );
 
   return (
     <Container.View>
