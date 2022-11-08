@@ -14,6 +14,7 @@ export type User = {
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 export type ConnectedDevice = {id: string; name: string};
 export type BluetoothDataRequestType =
+  | 'exit'
   | 'batteryV'
   | 'init'
   | 'battery'
@@ -30,6 +31,7 @@ export type ActiveDevice = {
   id: string;
   name: string;
   battery: number;
+  isPowerConnect: boolean;
   detail: Peripheral;
   isOn: boolean;
 };
@@ -53,6 +55,7 @@ export type Store = {
   loginRequired: boolean;
   myDeviceList: MyDevice[];
   possibleDeviceName: AppPlatform;
+  lang: 'ko' | 'en';
   setState: (type: string, payload: any) => void;
 };
 export type LoginData = {id: string; pw: string};

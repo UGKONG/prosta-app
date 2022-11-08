@@ -68,7 +68,7 @@ export default function 스캔된장비_아이템({
       );
     } catch {
       setIsConnecting(false);
-      let failText = '연결에 실패하였습니다. 다시 시도해주세요.';
+      let failText = '연결에 실패하였습니다. 프로스타를 3초간 만져주세요';
       return Alert.alert('PROSTA', failText, undefined, {cancelable: true});
     }
     setIsConnecting(false);
@@ -81,6 +81,8 @@ export default function 스캔된장비_아이템({
       isOn: false,
     });
     bleWrite({type: 'init', value: [0x30]});
+    let successText = '장비가 연결되었습니다.';
+    return Alert.alert('LUNA', successText, undefined, {cancelable: true});
   };
 
   // 장비 연결 해제

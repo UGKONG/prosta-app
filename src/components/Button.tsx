@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 export default function CustomButton(props: any) {
   return (
     <Button {...props}>
-      <ButtonText>{props?.children ?? '버튼'}</ButtonText>
+      <ButtonText>{props?.children ?? 'Button'}</ButtonText>
     </Button>
   );
 }

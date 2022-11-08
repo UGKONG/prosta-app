@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import React, {useEffect, useMemo, useState} from 'react';
-import {Alert} from 'react-native';
 import styled from 'styled-components/native';
 import Container from '../../components/Container';
 import Slider from '../../components/Slider';
@@ -15,6 +14,8 @@ import useBluetoothWrite from '../../../hooks/useBluetoothWrite';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {ParamListBase} from '@react-navigation/native';
 import useAxios from '../../../hooks/useAxios';
+import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/Entypo';
 
 export const modeList: number[] = [1, 2, 3, 4, 5];
 export const powerList: number[] = [1, 2, 3, 4, 5];
@@ -29,6 +30,7 @@ export default function 홈({navigation}: Props): JSX.Element {
   const isLogin = store(x => x?.isLogin);
   const activeDevice = store(x => x?.activeDevice);
   const remoteState = store(x => x?.remoteState);
+  const LANG = store(x => x?.lang);
   const possibleDeviceName = store(x => x?.possibleDeviceName);
   const [time, setTime] = useState<null | number>(null);
 
@@ -103,6 +105,17 @@ export default function 홈({navigation}: Props): JSX.Element {
     return {color: '#fff'};
   }, [time]);
 
+  // 충전중 여부
+  const isPowerConnect = useMemo<boolean>(() => {
+    if (!activeDevice) return false;
+    return activeDevice?.isPowerConnect;
+  }, [activeDevice?.isPowerConnect]);
+
+  // 언어
+  const isKo = useMemo<boolean>(() => {
+    return LANG === 'ko';
+  }, [LANG]);
+
   // 시작 정보 저장
   const createStartInfo = (): void => {
     const data = {
@@ -127,6 +140,13 @@ export default function 홈({navigation}: Props): JSX.Element {
     bleWrite({type: 'on', value: [0x42]});
 
     createStartInfo();
+    Toast.show({
+      text1: LANG === 'ko' ? '장비가 시작되었습니다.' : 'Device started.',
+      text2:
+        LANG === 'ko'
+          ? '장비 진행중에는 타이머 설정이 불가능합니다.'
+          : 'Timer setting is not possible while the device is in progress.',
+    });
   };
 
   // 프로스타 정지 (정지 플래그, 정지 신호 요청)
@@ -205,13 +225,19 @@ export default function 홈({navigation}: Props): JSX.Element {
             <Row>
               {isLogin ? (
                 <>
-                  <SubmitBtn isOn={isOn} onPress={startProsta}>
+                  <SubmitBtn
+                    isOn={isOn || isPowerConnect}
+                    onPress={startProsta}>
                     <SubmitBtnText isOn={isOn}>
-                      {isOn ? '진행중' : '프로스타 시작'}
+                      <Icon
+                        name="controller-play"
+                        color={isOn || isPowerConnect ? '#959092' : '#0b63ab'}
+                        size={26}
+                      />
                     </SubmitBtnText>
                   </SubmitBtn>
                   <SubmitBtn onPress={stopProsta}>
-                    <SubmitBtnText>정지</SubmitBtnText>
+                    <Icon name="controller-stop" color="#0b63ab" size={26} />
                   </SubmitBtn>
                 </>
               ) : (
@@ -234,7 +260,11 @@ export default function 홈({navigation}: Props): JSX.Element {
                     </ProgressBarWrap>
                   </>
                 ) : (
-                  <ProgressStatus>프로스타 시작이 필요합니다.</ProgressStatus>
+                  <ProgressStatus>
+                    {isPowerConnect
+                      ? '충전중에는 사용이 불가능합니다.'
+                      : '프로스타 시작이 필요합니다.'}
+                  </ProgressStatus>
                 )}
               </ProgressBarContainer>
             ) : null}

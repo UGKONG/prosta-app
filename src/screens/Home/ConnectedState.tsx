@@ -6,17 +6,23 @@ import store from '../../store';
 export default function ConnectedState() {
   const data = store(x => x?.activeDevice);
 
-  const battery = useMemo<{color: String; percent: number}>(() => {
+  type Battery = {
+    color: String;
+    percent: number;
+    isPowerConnect: boolean;
+  };
+  const battery = useMemo<Battery>(() => {
     let color: string = '#00b200';
-    if (!data?.battery) return {color: '#000', percent: 0};
+    let isPowerConnect: boolean = data?.isPowerConnect ?? false;
+    if (!data?.battery) return {color: '#000', percent: 0, isPowerConnect};
     let percent: number = data?.battery;
-    if (!percent) return {color: '#000', percent: 0};
+    if (!percent) return {color: '#000', percent: 0, isPowerConnect};
 
     if (percent <= 20) color = '#ff8000';
     if (percent <= 10) color = '#ff0000';
 
-    return {color, percent};
-  }, [data?.battery]);
+    return {color, percent, isPowerConnect};
+  }, [data]);
 
   return (
     <Container>
