@@ -8,7 +8,7 @@ import App from './src/App';
 import {name as appName} from './app.json';
 import {LocaleConfig} from 'react-native-calendars';
 
-const LANG = 'en';
+const LANG = 'ko';
 
 const monthList = [
   LANG === 'ko' ? '1월' : 'January',

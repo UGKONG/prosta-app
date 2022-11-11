@@ -11,7 +11,7 @@ export default createStore<Store>(set => ({
   isLogin: null,
   loginRequired: false,
   myDeviceList: [],
-  possibleDeviceName: 'LUNA',
+  possibleDeviceName: 'PROSTA',
   lang: 'ko',
   // lang: 'en',
   setState: (type: string, payload: any) =>

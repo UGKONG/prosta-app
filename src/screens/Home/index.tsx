@@ -35,6 +35,7 @@ export default function 홈({navigation}: Props): JSX.Element {
   const [time, setTime] = useState<null | number>(null);
 
   type RemoteList = {
+    id: number;
     name: string;
     list: number[];
     color: string;
@@ -44,7 +45,8 @@ export default function 홈({navigation}: Props): JSX.Element {
   const remoteList = useMemo<RemoteList[]>(
     () => [
       {
-        name: '모드',
+        id: 1,
+        name: LANG === 'ko' ? '모드' : 'Mode',
         list: modeList,
         color: '#0B63AB',
         value: remoteState?.mode,
@@ -56,7 +58,8 @@ export default function 홈({navigation}: Props): JSX.Element {
         },
       },
       {
-        name: '에너지',
+        id: 2,
+        name: LANG === 'ko' ? '에너지' : 'Energy',
         list: powerList,
         color: '#0B63AB',
         value: remoteState?.power,
@@ -68,7 +71,8 @@ export default function 홈({navigation}: Props): JSX.Element {
         },
       },
       {
-        name: '타이머 (분)',
+        id: 3,
+        name: LANG === 'ko' ? '타이머 (분)' : 'Timer (min)',
         list: timerList,
         color: '#0B63AB',
         value: remoteState?.timer,
@@ -218,6 +222,7 @@ export default function 홈({navigation}: Props): JSX.Element {
                     color={item?.color}
                     value={item?.value ?? item?.list[0]}
                     setValue={item?.setValue}
+                    disabled={item?.id === 3 && isOn}
                   />
                 </SliderContainer>
               </Row>
