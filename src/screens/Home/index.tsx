@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable curly */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -16,6 +17,7 @@ import type {ParamListBase} from '@react-navigation/native';
 import useAxios from '../../../hooks/useAxios';
 import Toast from 'react-native-toast-message';
 import Icon from 'react-native-vector-icons/Entypo';
+import {useDate} from '../../functions';
 
 export const modeList: number[] = [1, 2, 3, 4, 5];
 export const powerList: number[] = [1, 2, 3, 4, 5];
@@ -32,7 +34,19 @@ export default function 홈({navigation}: Props): JSX.Element {
   const remoteState = store(x => x?.remoteState);
   const LANG = store(x => x?.lang);
   const possibleDeviceName = store(x => x?.possibleDeviceName);
-  const [time, setTime] = useState<null | number>(null);
+  type Time = {end: string; now: string};
+  const [time, setTime] = useState<null | Time>(null);
+
+  // 언어
+  const isKo = useMemo<boolean>(() => {
+    return LANG === 'ko';
+  }, [LANG]);
+
+  // 장비 시작 플래그
+  const isOn = useMemo<boolean>(() => {
+    if (!activeDevice?.isOn) return false;
+    return true;
+  }, [activeDevice?.isOn]);
 
   type RemoteList = {
     id: number;
@@ -46,7 +60,7 @@ export default function 홈({navigation}: Props): JSX.Element {
     () => [
       {
         id: 1,
-        name: LANG === 'ko' ? '모드' : 'Mode',
+        name: isKo ? '모드' : 'Mode',
         list: modeList,
         color: '#0B63AB',
         value: remoteState?.mode,
@@ -59,7 +73,7 @@ export default function 홈({navigation}: Props): JSX.Element {
       },
       {
         id: 2,
-        name: LANG === 'ko' ? '에너지' : 'Energy',
+        name: isKo ? '에너지' : 'Energy',
         list: powerList,
         color: '#0B63AB',
         value: remoteState?.power,
@@ -72,11 +86,12 @@ export default function 홈({navigation}: Props): JSX.Element {
       },
       {
         id: 3,
-        name: LANG === 'ko' ? '타이머 (분)' : 'Timer (min)',
+        name: isKo ? '타이머 (분)' : 'Timer (min)',
         list: timerList,
         color: '#0B63AB',
         value: remoteState?.timer,
         setValue: (val: number) => {
+          if (isOn) return;
           bleWrite({
             type: 'timer',
             value: [0x10 + (val - 4)],
@@ -84,41 +99,42 @@ export default function 홈({navigation}: Props): JSX.Element {
         },
       },
     ],
-    [remoteState, activeDevice],
+    [remoteState, activeDevice, isOn, isKo],
   );
 
-  // 장비 시작 플래그
-  const isOn = useMemo<boolean>(() => {
-    if (!activeDevice?.isOn) return false;
-    return true;
-  }, [activeDevice?.isOn]);
+  // 장비 잔여 시간 (초)
+  const remainTimer = useMemo<number>(() => {
+    if (!time) return 0;
+    let end: Date = new Date(time?.end);
+    let now: Date = new Date(time?.now);
+    let calc: number = end?.getTime() - now?.getTime();
+    if (calc <= 0) return 0;
+    let result = calc / 1000;
+    console.log(result);
+    return result;
+  }, [time?.end, time?.now]);
 
   // Timer 퍼센트
   const timePercent = useMemo<number>(() => {
-    if (!remoteState?.timer || !time) return 0;
-    let result = (time / (remoteState?.timer * 60)) * 100;
+    if (!remoteState?.timer || !remainTimer) return 0;
+    let result = (remainTimer / (remoteState?.timer * 60)) * 100;
     return result <= 0 ? 0 : result >= 100 ? 100 : result;
-  }, [time, remoteState?.timer]);
+  }, [remainTimer, remoteState?.timer]);
 
   // Timer Color
   type TimeColor = {color: '#fff' | '#fac291' | '#ff0000'};
   const timeColor = useMemo<TimeColor>(() => {
-    if (!time) return {color: '#fff'};
-    if (time <= 30) return {color: '#ff0000'};
-    if (time <= 120) return {color: '#fac291'};
+    if (!remainTimer) return {color: '#fff'};
+    if (remainTimer <= 30) return {color: '#ff0000'};
+    if (remainTimer <= 120) return {color: '#fac291'};
     return {color: '#fff'};
-  }, [time]);
+  }, [remainTimer]);
 
   // 충전중 여부
   const isPowerConnect = useMemo<boolean>(() => {
     if (!activeDevice) return false;
     return activeDevice?.isPowerConnect;
   }, [activeDevice?.isPowerConnect]);
-
-  // 언어
-  const isKo = useMemo<boolean>(() => {
-    return LANG === 'ko';
-  }, [LANG]);
 
   // 시작 정보 저장
   const createStartInfo = (): void => {
@@ -136,20 +152,27 @@ export default function 홈({navigation}: Props): JSX.Element {
     useAxios.post('/device/use', data);
   };
 
+  const endTimeMaker = (): Time => {
+    let end: Date | string = new Date();
+    let now: Date | string = new Date();
+    end.setMinutes(end.getMinutes() + (remoteState?.timer ?? 0));
+    end = useDate(end);
+    now = useDate(now);
+    return {end, now};
+  };
+
   // 프로스타 시작 (시작 플래그, 시작 신호 요청)
   const startProsta = async (): Promise<void> => {
-    let timerSeconds = remoteState?.timer ? remoteState?.timer * 60 : 0;
-    setTime(timerSeconds);
+    setTime(endTimeMaker());
     dispatch('activeDevice', {...activeDevice, isOn: true});
     bleWrite({type: 'on', value: [0x42]});
 
     createStartInfo();
     Toast.show({
-      text1: LANG === 'ko' ? '장비가 시작되었습니다.' : 'Device started.',
-      text2:
-        LANG === 'ko'
-          ? '장비 진행중에는 타이머 설정이 불가능합니다.'
-          : 'Timer setting is not possible while the device is in progress.',
+      text1: isKo ? '장비가 시작되었습니다.' : 'Device started.',
+      text2: isKo
+        ? '장비 진행중에는 타이머 설정이 불가능합니다.'
+        : 'Timer setting is not possible while the device is in progress.',
     });
   };
 
@@ -164,20 +187,21 @@ export default function 홈({navigation}: Props): JSX.Element {
   const timeProcess = () => {
     let interval: null | NodeJS.Timer = null;
     // 꺼져있거나, 타임 정보가 없으면 Return
-    if (!isOn || time === null) return;
-
-    let _timer = time;
-    let count = 1;
+    if (!isOn || !time) return;
 
     // 반복 로직
     interval = setInterval(() => {
-      let result = _timer - count;
-      count++;
+      if (remainTimer <= 0) {
+        setTime(null);
+        stopProsta();
+        clearInterval(interval as NodeJS.Timeout);
+        return;
+      }
 
-      if (result >= 0) return setTime(result);
-
-      stopProsta();
-      clearInterval(interval as NodeJS.Timeout);
+      setTime(prev => ({
+        end: prev?.end as string,
+        now: useDate() as string,
+      }));
     }, 1000);
 
     return () => {
