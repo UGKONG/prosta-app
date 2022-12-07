@@ -9,6 +9,7 @@ export default createStore<Store>(set => ({
   isModal: false,
   isMenu: false,
   isLogin: null,
+  navigation: null,
   loginRequired: false,
   myDeviceList: [],
   possibleDeviceName: 'PROSTA',

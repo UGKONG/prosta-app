@@ -20,8 +20,6 @@ import type {
   User,
   SnsLoginList,
 } from '../../types';
-import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import type {ParamListBase} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Checkbox} from 'react-native-paper';
 import useAxios from '../../../hooks/useAxios';
@@ -41,11 +39,9 @@ const androidKeys: NaverLoginPlatformKey = {
 
 const naverLoginPlatformKey = Platform.OS === 'android' ? androidKeys : iosKeys;
 
-type Props = {
-  navigation?: NativeStackNavigationProp<ParamListBase, string, undefined>;
-};
-export default function 로그인({navigation}: Props): JSX.Element {
+export default function 로그인(): JSX.Element {
   const dispatch = store(x => x?.setState);
+  const navigation = store(x => x?.navigation);
   const possibleDeviceName = store(x => x?.possibleDeviceName);
   const [isAutoLogin, setIsAutoLogin] = useState(true);
 
@@ -73,6 +69,7 @@ export default function 로그인({navigation}: Props): JSX.Element {
       .post('/user/login', userData)
       .then(({data}) => {
         if (!data?.result) {
+          navigation.navigate('home');
           return Toast.show({
             type: 'error',
             text1: snsPlatform + ' 계정으로 로그인을 시도하였습니다.',
@@ -87,12 +84,12 @@ export default function 로그인({navigation}: Props): JSX.Element {
         Toast.show({
           type: 'success',
           text1: snsPlatform + ' 계정으로 로그인하였습니다.',
-          text2: name + '님 반갑습니다.',
+          text2: data?.current?.USER_NAME + '님 반갑습니다.',
         });
       })
-      .catch(() => {
+      .catch(err => {
+        console.log('우리서버 로그인 실패', err);
         // 실패
-        if (navigation) navigation.navigate('home');
         dispatch('isLogin', null);
         AsyncStorage.removeItem('isLogin');
 
@@ -101,6 +98,8 @@ export default function 로그인({navigation}: Props): JSX.Element {
           text1: snsPlatform + ' 계정으로 로그인을 시도하였습니다.',
           text2: '로그인에 실패하였습니다.',
         });
+
+        navigation.navigate('home');
       })
       .finally(() => {
         dispatch('isModal', false);

@@ -110,7 +110,6 @@ export default function 홈({navigation}: Props): JSX.Element {
     let calc: number = end?.getTime() - now?.getTime();
     if (calc <= 0) return 0;
     let result = calc / 1000;
-    console.log(result);
     return result;
   }, [time?.end, time?.now]);
 
@@ -139,7 +138,7 @@ export default function 홈({navigation}: Props): JSX.Element {
   // 시작 정보 저장
   const createStartInfo = (): void => {
     const data = {
-      APP_PLATFORM: 'PROSTA',
+      APP_PLATFORM: possibleDeviceName,
       USER_ID: isLogin?.USER_ID,
       DEVICE_ID: activeDevice?.id,
       DEVICE_NAME: activeDevice?.name,
@@ -148,7 +147,6 @@ export default function 홈({navigation}: Props): JSX.Element {
       USE_TIMER: remoteState?.timer,
       USE_BATTERY: activeDevice?.battery,
     };
-    console.log(data);
     useAxios.post('/device/use', data);
   };
 
@@ -282,7 +280,7 @@ export default function 홈({navigation}: Props): JSX.Element {
                 {isOn ? (
                   <>
                     <ProgressStatus style={timeColor}>
-                      {time ?? 0}초 후 자동 정지
+                      {remainTimer ?? 0}초 후 자동 정지
                     </ProgressStatus>
                     <ProgressBarWrap>
                       <ProgressBar percent={timePercent} />
